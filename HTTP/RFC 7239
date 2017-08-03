@@ -1,0 +1,115 @@
+## 1. Introduction
+   In today's HTTP landscape, there are a multitude of different applications that act as proxies for the user agents.
+   In many cases, these proxies exists without the action or knowledge of the end-user.
+   These cases occur, for example, when the proxy exists as a part of the infrastructure within the organization running the web server.
+   Such proxies may be used for features such as load balancing or crypto offload.
+   Another example is when the proxy is used within the same organization as the user, and the proxy is used to cache resources.
+   However, these proxies make the requests appear as if they originated from the proxy's IP address, and they may change other information in the original request.
+   This represents a loss of information from the original request.
+
+   This loss of information can cause problems for a web server that has a specific use for the clients' IP addresses that will not be met by using the address of the proxy or other information changed by the proxy.
+   The main uses of this information are for diagnostics, access control, and abuse management.
+   Diagnostic functions can include event logging, troubleshooting, and statistics gathering, and the information collected is usually only stored for short periods of time and only gathered in response to a particular problem or a complaint from the client.
+   Access control can be operated by configuring a list of client IP addresses from which access is permitted, but this approach will not work if a proxy is used, unless the proxy is trusted and is, itself, configured with a list of allowed client addresses for the server.  
+   Cases of abuse require identification of the abuser and this uses many of the same features identified for diagnostics.
+
+   Most of the time that a proxy is used, this loss of information is not the primary purpose, or even a desired effect, of using the proxy.  
+   Thus, to restore the desired functionality when a proxy is in use, a way of disclosing the original information at the HTTP level is needed.
+   Clearly, however, when the purpose of using a proxy is to provide client anonymity, the proxy will not use the feature defined in this document.
+
+   It should be noted that the use of a reverse proxy also hides information.
+   Again, where the loss of information is not a deliberate function of the use of the reverse proxy, it can be desirable to find a way to encode the information within the HTTP messages so that the consumer can see it.
+
+   A common way to disclose this information is by using the non-standard header fields such as X-Forwarded-For, X-Forwarded-By, and X-Forwarded-Proto.
+   There are many benefits to using a standardized approach to commonly desired protocol function: not least is interoperability between implementations.
+   This document standardizes a header field called "Forwarded" and provides the syntax and semantics for disclosing such information.  
+   "Forwarded" also combines all the information within one single header field, making it possible to correlate that information.
+   With the header field format described in this document, it is possible to know what information belongs together, as long as the proxies are trusted.
+   Such conclusions are not possible to make with the X-Forwarded class of header fields.
+   The header field defined in this document is optional such that implementations of proxies that are intended to provide privacy are not required to operate or implement the header field.
+
+   Note that similar issues to those described for proxies also arise with use of NATs.
+   This is discussed further in [RFC6269].
+
+## 1. 소개
+   오늘날의 HTTP환경에서는 user agent의 proxy역할을 하는 다양한 응용 프로그램들이 있다.
+   대부분의 경우에 이러한 proxy는 end-user의 행동이나 지식 없이 존재한다.
+   예를 들어, 이런 경우는 proxy가 웹서버를 운영하는 환경 안에서 인프라의 일부로 존재할때 발생한다.
+   이러한 proxy들은 아마 load balancing이나 crypto offload의 기능으로 사용될 것이다.
+   또 다른 경우는 proxy가 사용자와 같은 환경 안에서 사용되고, proxy가 자원을 캐시하는 용도로 사용될 때이다.
+   그러나 이런 proxy들은 proxy의 IP 주소로부터 request가 온 것처럼 표시하고, 본래의 request 안에서 다른 정보들을 변경할 수도 있다.
+   이것은 본래의 request로부터 정보가 손실되었다는 것을 보여준다.
+
+   이런 정보의 손실은 proxy의 주소 사용으로 인해 접근할 수 없거나, proxy에 의해 다른 정보가 변경된 client의 IP 주소를 특별한 용도로 사용하는 웹서버에 문제를 발생시킬 수 있다.
+   정보의 주된 용도는 진단, 접근 제어, 남용 관리이다.
+   진단 기능에는 이벤트 로깅, troubleshooting 그리고 통계 수집이 포함될 수 있으며, 수집된 정보는 보통 짧은 기간 동안에만 저장된다.
+   그리고 client 의 불만이나 특정 문제에 따른 응답으로 수집된다.
+   접근 제어는 접근이 허용된 client IP 주소 목록을 구성하여 동작시킬 수 있다.
+   하지만, proxy가 그 자체로 신뢰되거나 접근이 허용된 client IP 주소 목록에 포함되어 설정되어 있는 경우를 제외하곤 동작하지 않는다.
+   남용의 경우, 남용하는 사용자의 식별이 필요로 하고, 진단을 위한 식별된 것과 같은 동일한 많은 기능을 사용한다.
+
+   proxy가 사용되는 대부분의 경우, 이러한 정보의 손실은 proxy를 사용하는 데에 있어 주된 목적이 아니고 심지어는 의도된 효과도 아니다.
+   따라서, proxy를 사용할때 의도된 기능대로 복원하려면, HTTP 수준에서 본래의 정보를 보여주는 방법이 필요하다.
+   그러나 proxy를 사용하는 목적이 client의 익명성을 보장하기 위해서라면, 이 문서에서 정의된 proxy에서는 관련된 내용을 다루지 않는다.
+
+   reverse proxy를 사용해도 정보가 숨겨질 수 있다.
+   다시 말해서, reverse proxy를 사용할때 정보의 손실이 발생하는 것이 의도적인 것이 아니라면, 사용자가 내용을 볼 수 있도록 HTTP 메시지 안에서 정보를 인코딩하는 방법을 찾는 것이 더 나을 수 있다.
+
+   이러한 정보를 표시하는 가장 흔한 방법은 X-Forwarded-For, X-Forwarded-By 그리고 X-Forwarded-Proto 와 같은 비표준 헤더 필드를 사용하는 것이다.
+   공통적으로 요구되는 프로토콜 기능에 대한 표준화된 접근 방법을 사용하는 것은 많은 이점이 있다. 특히 구현 간에 상호 의존성에 있어서는 이점이 있다.
+   이 문서는 "Forwarded" 라고 불리는 헤더 필드를 표준화하고, 이런 정보를 보여주기 위한 문법과 구문을 제공한다.
+   "Forwarded"는 또한 하나의 단일 헤더 필드 안의 모든 정보를 결합하여, 상호 연관 시킬수도 있다.
+   이 문서에 적힌 헤더 필드 형식은 proxy가 신뢰되는 한 어떠한 정보들이 함께 속해있는지 알 수 있도록 해준다.
+   위와 같은 기능은 헤더 필드의 X-Forwarded 클래스만으로는 불가능하다.
+   이 문서에 적힌 헤더 필드는 선택적인 사항이므로, privacy를 제공하려는 proxy의 구현서는 헤더 필드를 조작하거나 별도로 구현할 필요가 없다.
+
+   proxy에서 묘사된 것과 유사한 이슈들은 NAT를 사용함에 있어서도 동일하게 나타난다.
+   이러한 논의는 [RFC6269]에서 더 다뤄진다.
+
+
+
+
+## 2. Notational Conventions
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in [RFC2119].
+
+
+## 2. 표기 규칙
+   이 문서에서 사용된 "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" 의 키워드들은 [RFC2119]에서 정의된대로 해석되어야 한다.
+
+
+
+
+## 3. Syntax Notations
+   This specification uses the Augmented Backus-Naur Form (ABNF) notation of [RFC5234] with the list rule extension defined in Section7 of [RFC7230].
+
+
+## 3. 구문 표기법
+   이 명세는 [RFC7230]의 섹션7에 정의된 목록 규칙 확장과 함께 [RFC5234]의 Augmented Backus-Naur Form(ABNF) 표기법을 사용한다.
+
+
+
+
+## 4. Forwarded HTTP Header Field
+   The "Forwarded" HTTP header field is an OPTIONAL header field that, when used, contains a list of parameter-identifier pairs that disclose information that is altered or lost when a proxy is involved in the path of the request.
+   Due to the sensitive nature of the data passed in this header field (see Sections 8.2 and 8.3), this header field should be turned off by default.
+   Further, each parameter should be configured individually.  "Forwarded" is only for use in HTTP requests and is not to be used in HTTP responses.
+   This applies to forwarding proxies, as well as reverse proxies.
+   Information passed in this header field can be, for example, the source IP address of the request, the IP address of the incoming interface on the proxy, or whether HTTP or HTTPS was used.
+   If the request is passing through several proxies, each proxy can add a set of parameters; it can also remove previously added "Forwarded" header fields.
+   
+
+## 4. Forwarded HTTP 헤더 필드
+   "Forwarded" HTTP 헤더 필드는 선택적으로 사용할 수 있는 필드이다.
+   이 필드가 사용될때, proxy가 request경로의 포함되어있으면, proxy에 의해 변경되거나 손실되는 정보를 알려주는 파라미터-식별자의 목록이 포함된다.
+   이 헤더 필드(8.2 및 8.3절 참조)에서 전달되는 데이터의 민감한 특성으로 인해, 이 헤더 필드는 기본 값이 꺼져있는 상태여야 한다.
+   게다가, 각각의 파라미터는 개별적으로 설정되어야 한다.
+   "Forwarded"는 HTTP request에서만 사용되고, HTTP response에서는 사용되지 않는다.
+   이 규칙은 forwarding proxy뿐만 아니라 reverse proxy에서도 동일하게 적용된다.
+   이 헤더 필드에서 전달되는 정보는 request의 source IP, proxy의 수신 인터페이스 IP 또는 HTTP나 HTTPS의 사용 여부가 될 수도 있다.
+   만약 request가 여러개의 proxy를 지나서 전달된다면, 각각의 proxy는 파라미터들의 모음으로 더해질 수 있다. 또, 이전의 추가된 "Forwarded" 헤더 필드의 값을 제거할 수도 있다.
+
+
+
+
+
+[참고 : RFC 7239](https://tools.ietf.org/html/rfc7239)
