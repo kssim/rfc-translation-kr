@@ -57,7 +57,7 @@ Unless otherwise indicated below, a compliant decompressor must be able to accep
 The material in the appendices is not part of the specification per se and is not relevant to compliance.   
 
 
-### 1.4. 허용
+### 1.4. 호환
 아래에서 특별히 명시하지 않는 한, 호환 압축 해제는 여기에 제시된 모든 사양을 준수하는 파일을 허용하고 압축을 풀 수 있어야 한다.
 압축은 여기에 준수된 모든 사양을 준수하는 파일을 생성해야 한다.
 부록에 있는 부분은 규격이 아니고, 규정과는 상관이 없다.   
