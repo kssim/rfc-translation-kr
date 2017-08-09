@@ -216,9 +216,31 @@ For example, the decimal number 520 is stored as:
 
 
 
+### 3.1.1. Packing into bytes
+This document does not address the issue of the order in which bits of a byte are transmitted on a bit-sequential medium, since the final data format described here is byte- rather than bit-oriented.
+However, we describe the compressed block format in below, as a sequence of data elements of various bit lengths, not a sequence of bytes.  
+We must therefore specify how to pack these data elements into bytes to form the final compressed byte sequence:
+
+* Data elements are packed into bytes in order of increasing bit number within the byte, i.e., starting with the least-significant bit of the byte.
+* Data elements other than Huffman codes are packed starting with the least-significant bit of the data element.
+* Huffman codes are packed starting with the most- significant bit of the code.
+
+In other words, if one were to print out the compressed data as a sequence of bytes, starting with the first byte at the *right* margin and proceeding to the *left*, with the most- significant bit of each byte on the left as usual, one would be able to parse the result from right to left, with fixed-width elements in the correct MSB-to-LSB order and Huffman codes in bit-reversed order (i.e., with the first bit of the code in the relative LSB position).
 
 
 
+### 3.1.1. 바이트로 패킹
+이 문서는 byte 의 전송 과정에서 bit와 관련된 문제를 다루지 않는다.  
+여기에 정리된 데이터 형식은 bit 중심이 아닌 byte 중심이다.  
+그러나, 우리는 아래에서 압축된 블록 포멧을 바이트의 시퀀스가 아닌 다양한 비트 길이의 데이터 요소 시퀀스로 기술했다.  
+그러므로 우리는 이러한 데이터 요소를 바이트로 묶어, 최종 압축된 바이트의 시퀀스 형태로 어떻게 패킹하는지 명세해야한다.
+
+* 데이터 요소는 바이트 내에서 증가하는 비트 수의 순서를 따라 바이트로 패킹된다. 즉, 바이트의 최소 비트로 시작된다.
+* Huffman 코드가 아닌 다른 데이터 요소들은 
+* Data elements other than Huffman codes are packed starting with the least-significant bit of the data element.
+* Huffman codes are packed starting with the most- significant bit of the code.
+
+In other words, if one were to print out the compressed data as a sequence of bytes, starting with the first byte at the *right* margin and proceeding to the *left*, with the most- significant bit of each byte on the left as usual, one would be able to parse the result from right to left, with fixed-width elements in the correct MSB-to-LSB order and Huffman codes in bit-reversed order (i.e., with the first bit of the code in the relative LSB position).
 
 
 
