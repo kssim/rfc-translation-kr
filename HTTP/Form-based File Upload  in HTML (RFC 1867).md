@@ -336,20 +336,339 @@ In any case, a HTTP server may abort a file upload in the middle of the transact
 
 
 ## 5.2 지연된 파일 전송
-몇몇 상황에서, 실제로 수신된 데이터를 준비하기 전에 서버가 다양한 폼 데이터의 요소(사용자 이름, 계정등)를 검사하는 것은 권고된다.  
-그러나, 몇가지 고려사항을 볼때, 
-However, after some consideration, it seemed best to require that servers that wish to do this should implement this as a series of forms, where some of the data elements that were previously validated might be sent back to the client as 'hidden' fields, or by arranging the form so that the elements that need validation occur first.  
-This puts the onus of maintaining the state of a transaction only on those servers that wish to build a complex application, while allowing those cases that have simple input needs to be built simply.
+몇몇 상황에서, 실제로 수신된 데이터를 준비하기 전에 서버가 다양한 폼 데이터의 요소(사용자 이름, 계정등)를 검사하는 것이 좋다.  
+하지만, 몇가지 고려사항을 생각해보면, 이를 수행하고자 하는 서버는 이러한 데이터를 일련의 형태로 구현해야하며, 이러한 데이터들은 이전에 확인된 데이터 요소 중 일부가 '숨겨진' 필드로 client로 다시 전송되어하거나, 검증이 필요한 요소이다.  
+이것은 복잡한 어플리케이션을 구축하기 위한 서버들에서는 트랙젝션의 상태 관리를 위한 중요한 부분을 차지한다.  
+반면에 단순한 입력만 필요한 서버는 쉽게 구축할 수 있다.  
 
-The HTTP protocol may require a content-length for the overall transmission.  
-Even if it were not to do so, HTTP clients are encouraged to supply content-length for overall file input so that a busy server could detect if the proposed file data is too large to be processed reasonably and just return an error code and close the connection without waiting to process all of the incoming data.  
-Some current implementations of CGI require a content-length in all POST transactions.
+HTTP 프로토콜은 전반적인 전송을 위해 content-length가 필요하다.  
+제공을 하지 않더라도, HTTP client들이 전체 파일 입력에 대한 content-length 를 제공하여, 사용량이 많은 서버들은 합리적으로 처리하기에 너무 큰 파일 데이터들을 감지하여, 에러 코드를 리턴하고 들어오는 데이터를 모두 처리하지 않고 연결을 종료한다.  
+현재 몇몇 CGI의 구현물들은 모든 POST 트랜젝션에 대한 content-length가 필요하다.
 
-If the INPUT tag includes the attribute MAXLENGTH, the user agent should consider its value to represent the maximum Content-Length (in bytes) which the server will accept for transferred files.  
-In this way, servers can hint to the client how much space they have available for a file upload, before that upload takes place.  
-It is important to note, however, that this is only a hint, and the actual requirements of the server may change between form creation and file submission.
+만약 INPUT태그에 MAXLENGTH 속성이 포함되어있으면, user agent는 전송된 파일을 서버가 받기 위한 최대 content-length값(바이트 단위)을 고려해야한다.  
+이런 방식으로, 서버는 클라이언트에게 파일 업로드를 위해 사용할 수 있는 용량을 파일 업로드를 수행하기 전에 알릴 수 있다.  
+그러나, 이것은 오직 암시일 뿐이고, 폼 작성이나 파일 제출 간에 서버가 실제로 필요로 하는 것이 달라질 수 있다.
 
-In any case, a HTTP server may abort a file upload in the middle of the transaction if the file being received is too large.
+어떤 경우든, HTTP 서버는 수신 중인 파일의 크기가 너무 큰 경우, 트랙젝션 중간에 파일 업로드를 중단할 수 있다.
+
+
+## 5.3 Other choices for return transmission of binary data
+Various people have suggested using new mime top-level type "aggregate", e.g., aggregate/mixed or a content-transfer-encoding of "packet" to express indeterminate-length binary data, rather than relying on the multipart-style boundaries.  
+While we are not opposed to doing so, this would require additional design and standardization work to get acceptance of "aggregate".  
+On the other hand, the 'multipart' mechanisms are well established, simple to implement on both the sending client and receiving server, and as efficient as other methods of dealing with multiple combinations of binary data.
+
+
+## 5.3 바이너리 데이터의 전송을 위한 다른 선택
+많은 사람들이 바이너리 데이터의 불확실한 길이를 표현하기 위해 multipart-style 의 바운더리가 아닌 aggregate/mixed 나 "패킷"의 content-transfer-encoding 같은 새로운 top-level mime 타입으로 "aggregate"를 제안했다.  
+이 제안을 반대하는 것은 아니지만, "aggregate"를 수용하려면, 표준화 작업과 몇가지 추가적인 설계가 필요하다.  
+반면에, "multipart" 매커니즘은 이미 구축되어 있고, 보내는 클라이언트와 받는 서버가 구현하기 쉽다.  
+그리고, 바이너리 데이터의 다양한 종류를 다루기에 다른 방법들보다 효율적이다.
+
+
+## 5.4 Not overloading ```<INPUT>```
+Various people have wondered about the advisability of overloading 'INPUT' for this function, rather than merely providing a different type of FORM element.  
+Among other considerations, the migration strategy which is allowed when using ```<INPUT>``` is important.  
+In addition, the ```<INPUT>``` field *is* already overloaded to contain most kinds of data input; rather than creating multiple kinds of ```<INPUT>``` tags, it seems most reasonable to enhance ```<INPUT>```.  
+The 'type' of INPUT is not the content-type of what is returned, but rather the 'widget-type'; i.e., it identifies the interaction style with the user.  
+The description here is carefully written to allow ```<INPUT TYPE=FILE>``` to work for text browsers or audio-markup.
+
+
+## 5.4 ```<INPUT>```태그를 오버로딩 하지 않음
+많은 사람들이 폼의 요소의 다른 타입을 제공하는 것보다 INPUT 을 오버로딩하는 것이 바람직하다고 생각했다.  
+다른 고려사항들 중에, ```<INPUT>``` 을 사용하는 마이그레이션 전략도 중요하다.  
+게다가, ```<INPUT>``` 필드는 다양한 종류의 데이터 입력을 포함하기 위해 오버로딩되어 있다.  
+다양한 ```<INPUT>``` 태그를 생성하는 것보다, ```<INPUT>```태그를 강화하는 것이 더 합리적으로 보인다.  
+INPUT의 "type"은 return되는 content-type이 아니라, 'widget-type' 이다.  
+즉, 사용자와 상호작용을 위한 스타일을 식별한다.  
+
+이곳의 설명은 텍스트 브라우저나 오디오-마크업에서도 동작하도록 ```<INPUT TYPE=FILE>```이 가능하도록 신중하게 작성되었다.
+
+
+## 5.5 Default content-type of field data
+Many input fields in HTML are to be typed in.  
+There has been some ambiguity as to how form data should be transmitted back to servers.  
+Making the content-type of ```<INPUT>``` fields be text/plain clearly disambiguates that the client should properly encode the data before sending it back to the server with CRLFs.
+
+
+## 5.5 필드 데이터의 기본 content-type
+HTML에서 많은 입력 필드가 입력된다.  
+폼 데이터가 다시 서버로 어떻게 전송되는 지에 대해서는 다소 모호함이 있다.  
+```<INPUT>``` 필드의 content-type을 text/plain으로 만들면 client가 CRLF를 사용하여 서버로 데이터를 보내기 전에 데이터를 올바르게 인코딩해야한다는 것을 분명하게 한다.  
+
+
+## 5.6 Allow form ACTION to be "mailto:"
+Independent of this proposal, it would be very useful for HTML interpreting user agents to allow a ACTION in a form to be a "mailto:" URL.  
+This seems like a good idea, with or without this proposal.  
+Similarly, the ACTION for a HTML form which is received via mail should probably default to the "reply-to:" of the message.  
+These two proposals would allow HTML forms to be served via HTTP servers but sent back via mail, or, alternatively, allow HTML forms to be sent by mail, filled out by HTML-aware mail recipients, and the results mailed back.
+
+
+## 5.6 "mailto:"의 action 형식 허용
+이 제안과는 별도로, HTML을 사용하여, user agent가 "mailto:" URL 형식으로 ACTION을 허용하는 것은 유용하다.  
+이것은 제안의 유무와 관계없이 좋은 아이디어로 보인다.  
+이와 마찬가지로, 메일을 통해 수신되는 HTML 폼의 ACTION은 메시지의 "reply-to:"로 기본 설정되어야 한다.
+이 두가지 제안은 HTML 폼을 HTTP 서버를 통해 제공할 수 있지만, 메일을 통해 다시 보내거나 HTML 양식을 메일로 보내고 HTML 인식 메일 수신자가 채우고 결과를 우편으로 보내도록 허용한다.
+
+
+## 5.7 Remote files with third-party transfer
+In some scenarios, the user operating the client software might want to specify a URL for remote data rather than a local file.  
+In this case, is there a way to allow the browser to send to the client a pointer to the external data rather than the entire contents?  
+This capability could be implemented, for example, by having the client send to the server data of type "message/external-body" with "access-type" set to, say, "uri", and the URL of the remote data in the body of the message.
+
+
+## 5.7 서드 파티 전송 프로그램과 원격 파일들
+일부 시나리오에서, client 소프트웨어를 사용하는 사용자가 로컬 파일이 아닌 원격 데이터의 URL을 지정하려고 할 수 있다.  
+그런 경우, 브라우저가 전체 내용이 아닌 외부 데이터에 대한 포인터를 클라이언트에게 전송하는 방법이 있을까?  
+예를 들어, 이 기능은 클라이언트가 "message/external-body" 타입의 데이터와 "access-type"을 설정하고, 메시지의 바디 안의 원격 데이터의 URL을 보낼때 구현될 수 있다.
+
+
+## 5.8 File transfer with ENCTYPE=x-www-form-urlencoded
+If a form contains ```<INPUT TYPE=file>``` elements but does not contain an ENCTYPE in the enclosing ```<FORM>```, the behavior is not specified.
+It is probably inappropriate to attempt to URN-encode large quantities of data to servers that don't expect it.
+
+
+## 5.8 ENCTYPE=x-www-form-urlencoded 와 파일 전송
+만약 폼이 ```<INPUT TYPE=file>``` 요소를 포함하고 있고, ```<FORM>```안에 ENCTYPE을 포함하고 있지 않다면, 그에 대한 행동은 명세되어 있지 않다.  
+많은 양의 데이터를 예측하고 있지 않은 서버에 URN-encode를 사용하려하는 것은 부적절할 수 있다.
+
+
+## 5.9 CRLF used as line separator
+As with all MIME transmissions, CRLF is used as the separator for lines in a POST of the data in multipart/form-data.
+
+
+## 5.9 개행 문자로써 CRLF의 사용
+모든 MIME의 전송과 마찬가지로, multipart/form-data 에서 데이터의 POST 안의 CRLF는 개행 문자로써 사용된다.
+
+
+## 5.10 Relationship to multipart/related
+The MIMESGML group is proposing a new type called multipart/related.  
+While it contains similar features to multipart/form-data, the use and application of form-data is different enough that form-data is being described separately.
+
+It might be possible at some point to encode the result of HTML forms(including files) in a multipart/related body part; this is not incompatible with this proposal.
+
+
+## 5.10 multipart/related와 관계
+MIMESGML 그룹은 multipart/related 라고 불리는 새로운 타입을 제안했다.  
+multipart/form-data와 유사한 특징을 포함하고 있는 한편, form-data의 사용과 적용은 form-data에 적혀져있는 것과는 다르다.
+
+어떤 시점에서 multipart/related 바디 부분에서 HTML 폼(파일을 포함하고 있는)의 결과를 변활 할 수 있다.  
+이 것은 이 제안과는 호환되지 않는다.
+
+
+## 5.11 Non-ASCII field names
+Note that mime headers are generally required to consist only of 7-bit data in the US-ASCII character set.  
+Hence field names should be encoded according to the prescriptions of RFC 1522 if they contain characters outside of that set.  
+In HTML 2.0, the default character set is ISO-8859-1, but non-ASCII characters in field names should be encoded.
+
+
+
+## 5.11 ASCII가 아닌 필드의 이름
+mime 헤더들은 일반적으로 US-ASCII character set을 사용하여, 7-bit의 데이터로 구성된다.  
+그러므로, 만약 characters 안에 포함되어 있지 않은 문자가 포함되어 있으면, 필드의 이름들은 RFC 1522의 규약에 따라 변환되어야 한다.  
+HTML 2.0에서는 기본 character set 이 ISO-8859-1 이고, 필드 이름에 ASCII가 아닌 문자들이 있는 경우, 변환되어야 한다.
+
+
+# 6. Examples
+Suppose the server supplies the following HTML:
+
+```
+<FORM ACTION="http://server.dom/cgi/handle"
+	ENCTYPE="multipart/form-data" METHOD=POST>
+What is your name? <INPUT TYPE=TEXT NAME=submitter>
+What files are you sending? <INPUT TYPE=FILE NAME=pics>
+</FORM>
+```
+
+and the user types "Joe Blow" in the name field, and selects a text file "file1.txt" for the answer to 'What files are you sending?'
+
+The client might send back the following data:
+
+```
+Content-type: multipart/form-data, boundary=AaB03x
+
+--AaB03x
+content-disposition: form-data; name="field1"
+
+Joe Blow
+--AaB03x
+content-disposition: form-data; name="pics"; filename="file1.txt"
+Content-Type: text/plain
+
+  ... contents of file1.txt ...
+--AaB03x--
+```
+
+If the user also indicated an image file "file2.gif" for the answer to 'What files are you sending?', the client might send back the following data:
+
+```
+Content-type: multipart/form-data, boundary=AaB03x
+
+--AaB03x
+content-disposition: form-data; name="field1"
+
+Joe Blow
+--AaB03x
+content-disposition: form-data; name="pics"
+Content-type: multipart/mixed, boundary=BbC04y
+
+--BbC04y
+Content-disposition: attachment; filename="file1.txt"
+        
+Content-Type: text/plain
+
+  ... contents of file1.txt ...
+--BbC04y
+Content-disposition: attachment; filename="file2.gif"
+Content-type: image/gif
+Content-Transfer-Encoding: binary
+
+  ...contents of file2.gif...
+--BbC04y--
+--AaB03x--
+```
+
+
+## 6. 예시
+서버가 아래와 같은 HTML로 구성되어있다고 가정한다.
+
+```
+<FORM ACTION="http://server.dom/cgi/handle"
+	ENCTYPE="multipart/form-data" METHOD=POST>
+What is your name? <INPUT TYPE=TEXT NAME=submitter>
+What files are you sending? <INPUT TYPE=FILE NAME=pics>
+</FORM>
+```
+
+그리고, 사용자가 이름 필드에 "Joe Blow"라고 입력하고, "어떤 파일을 보낼것인가?"라는 질문에 대한 답변으로 "file1.txt" 파일을 선택했다.
+clilent는 아마 아래와 같은 데이터를 보낼 것이다.
+
+```
+Content-type: multipart/form-data, boundary=AaB03x
+
+--AaB03x
+content-disposition: form-data; name="field1"
+
+Joe Blow
+--AaB03x
+content-disposition: form-data; name="pics"; filename="file1.txt"
+Content-Type: text/plain
+
+  ... contents of file1.txt ...
+--AaB03x--
+```
+
+만약 사용자가 "어떤 파일을 보낼것인가?"라는 질문에 대한 답변으로, "file2.gif"라는 이미지 파일도 가르켰다면, client는 아마 아래와 같은 데이터를 보낼 것이다.
+
+```
+Content-type: multipart/form-data, boundary=AaB03x
+
+--AaB03x
+content-disposition: form-data; name="field1"
+
+Joe Blow
+--AaB03x
+content-disposition: form-data; name="pics"
+Content-type: multipart/mixed, boundary=BbC04y
+
+--BbC04y
+Content-disposition: attachment; filename="file1.txt"
+        
+Content-Type: text/plain
+
+  ... contents of file1.txt ...
+--BbC04y
+Content-disposition: attachment; filename="file2.gif"
+Content-type: image/gif
+Content-Transfer-Encoding: binary
+
+  ...contents of file2.gif...
+--BbC04y--
+--AaB03x--
+```
+
+
+# 7. Registration of multipart/form-data
+The media-type multipart/form-data follows the rules of all multipart MIME data streams as outlined in RFC 1521.  
+It is intended for use in returning the data that comes about from filling out a form.  
+In a form (in HTML, although other applications may also use forms), there are a series of fields to be supplied by the user who fills out the form.  
+Each field has a name.  
+Within a given form, the names are unique.
+
+multipart/form-data contains a series of parts.  
+Each part is expected to contain a content-disposition header where the value is "form-data" and a name attribute specifies the field name within the form, e.g., 'content-disposition: form-data; name="xxxxx"', where xxxxx is the field name corresponding to that field.  
+Field names originally in non-ASCII character sets may be encoded using the method outlined in RFC 1522.
+
+As with all multipart MIME types, each part has an optional Content-Type which defaults to text/plain.  
+If the contents of a file are returned via filling out a form, then the file input is identified as application/octet-stream or the appropriate media type, if known.  
+If multiple files are to be returned as the result of a single form entry, they can be returned as multipart/mixed embedded within the multipart/form-data.
+
+Each part may be encoded and the "content-transfer-encoding" header supplied if the value of that part does not conform to the default encoding.
+
+File inputs may also identify the file name.  
+The file name may be described using the 'filename' parameter of the "content-disposition" header.  
+This is not required, but is strongly recommended in any case where the original filename is known.  
+This is useful or necessary in many applications.
+
+
+# 7. multipart/form-data의 등록
+multipart/form-data 미디어 타입은 RFC 1521의 모든 multipart MIME 데이터 스트림의 규칙들을 따른다.  
+폼을 작성하고 난 뒤, 데이터를 반환하는데 사용하기 위한 것이다.  
+폼에서(HTML에서, 다른 어플리케이션도 아마 폼을 사용할 것이다.) 폼을 채우는 사용자에 의해 제공되는 일련의 필드들이 있다.  
+각각의 필드는 이름을 가지고 있고 폼 안에서 주어진 이름들은 고유하다.
+
+multipart/form-data는 일련의 부분들로 구성되어있다.  
+각각의 부분들은 값이 "form-data"이고 이름 속성이 form 안의 필드 이름으로 구성된 content-disposition 헤더를 가지고 있을 것으로 예상된다.  
+예를 들어 "content-disposition: form-data; name="xxxxx""이고, xxxxx는 필드의 이름이다.  
+원래 ASCII가 아닌 character set을 가진 필드 이름들은 RFC 1522 안에 정의된 방법을 사용하여, 변환된다.
+
+모든 multipart MIME 타입들과 마찬가지로, 각각의 부분은 선택적으로 기본값이 text/plain인 Content-Type을 가진다.  
+파일의 content가 폼에서 작성되어서 리턴되었다면, 파일 입력은 application/octet-stream 이나 알고 있는 적절한 미디어 타입으로 식별된다.  
+만약 다수의 파일들이 하나의 폼 개체의 결과로 리턴된다면, multipart/form-data 안에 포함된 multipart-mixed로 리턴될 수 있다.  
+부분들이 기본 인코딩이 적용되어 있지 않았다면, 각각의 부분은 인코딩되고 "content-transfer-encoding" 헤더가 제공될 것이다.
+
+
+파일 입력은 파일 이름으로 식별될 수 있다.  
+파일 이름은 "content-disposition" 헤더의 "filename" 파라미터를 사용해서 작성되어야 한다.  
+이것은 필수 사항은 아니지만, 원래의 파일 이름을 알고 있는 많은 경우에 강력하게 권고 되고 있다.  
+이것은 많은 어플리케이션에서 필요하고, 유용하다.
+
+
+# 8. Security Considerations
+It is important that a user agent not send any file that the user has not explicitly asked to be sent.  
+Thus, HTML interpreting agents are expected to confirm any default file names that might be suggested with ```<INPUT TYPE=file VALUE="yyyy">```.  
+Never have any hidden fields be able to specify any file.
+
+This proposal does not contain a mechanism for encryption of the data;  
+this should be handled by whatever other mechanisms are in place for secure transmission of data, whether via secure HTTP, or by security provided by MOSS (described in RFC 1848).
+
+Once the file is uploaded, it is up to the receiver to process and store the file appropriately.
+
+
+# 8. 보안 고려사항
+사용자가 명시적으로 보내지 않은 파일을 user agent가 보내지 않는 것은 매우 중요하다.  
+그러므로, HTML interpreting agent들은 ```<INPUT TYPE=file VALUE="yyyy">```에서 제공할 수 있는 기본 파일 이름을 확인해야 한다.  
+숨겨진 필드에서 파일을 지정할 수 없도록 해야한다.
+
+이 제안은 데이터의 암호화를 위한 매커니즘을 포함하고 있지 않다.  
+보안 HTTP 를 통하거나, MOSS(RFC 1848에 정의된)에 의해 제공되는 보안을 통해 데이터 보안 전송을 위한 다른 매커니즘이 다뤄져야 한다.
+
+파일이 업로드되면, 파일을 적절히 처리하고 저장하는 것은 수신자의 몫이다.
+
+
+# 9. Conclusion
+The suggested implementation gives the client a lot of flexibility in the number and types of files it can send to the server, it gives the server control of the decision to accept the files, and it gives servers a chance to interact with browsers which do not support INPUT TYPE "file".
+
+The change to the HTML DTD is very simple, but very powerful.  
+It enables a much greater variety of services to be implemented via the World-Wide Web than is currently possible due to the lack of a file submission facility.  
+This would be an extremely valuable addition to the capabilities of the World-Wide Web.
+
+
+# 9. 결론
+제안된 구현은 client에게 서버에 전송할 수 있는 파일의 수와 유형을 매우 유연하게 제공하고, 서버가 파일을 수락할지 결정할 수 있게 하며, 서버가 INPUT TYPE "file"을 지원하지 않는 브라우저와 상호 작용할 수 있는 기회를 제공한다.
+
+HTML DTD의 변경은 매우 간단하지만, 매우 강력하다.  
+이것은 파일 제출 기능이 없기 때문에 현재 가능한 것보다 훨씬 더 다양한 서비스를 World-Wide Web 을 통해 제공할 수 있다.  
+이것은 World-Wide Web 의 매우 가치있는 기능 추가가 될 것이다.
 
 
 # 참조
